@@ -1,4 +1,4 @@
-package com.cxl.soft.sell.utils.serializer;
+package com.cxl.soft.sell.utils;
 
 import com.cxl.soft.sell.vo.ResultVo;
 

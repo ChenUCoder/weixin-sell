@@ -9,7 +9,7 @@ import java.io.IOException;
 import java.util.Date;
 
 /**
- * Created by Administrator on 2017/10/18 0018.
+ * 时间转换类
  */
 public class Date2LongSerializer extends JsonSerializer<Date>{
 
