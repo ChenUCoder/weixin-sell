@@ -55,6 +55,8 @@ public class OrderServiceImplTest {
 
     @Test
     public void findOne() {
+        OrderDto one = orderService.findOne(BUYER_OPENID);
+        Assert.assertNotNull(one);
     }
 
     @Test

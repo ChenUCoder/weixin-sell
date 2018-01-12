@@ -1,5 +1,6 @@
 package com.cxl.soft.sell.service.impl;
 
+import com.cxl.soft.sell.convert.ConvertOrderMaster2OrderDto;
 import com.cxl.soft.sell.dataobject.OrderDetail;
 import com.cxl.soft.sell.dataobject.OrderMaster;
 import com.cxl.soft.sell.dataobject.ProductInfo;
@@ -14,9 +15,11 @@ import com.cxl.soft.sell.repository.OrderMasterRepository;
 import com.cxl.soft.sell.service.OrderService;
 import com.cxl.soft.sell.service.ProductInfoService;
 import com.cxl.soft.sell.utils.KeyUtil;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.CollectionUtils;
@@ -26,6 +29,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
+@Slf4j
 public class OrderServiceImpl implements OrderService {
     @Autowired
     private OrderMasterRepository masterRepository;
@@ -77,7 +81,6 @@ public class OrderServiceImpl implements OrderService {
                 .map(e -> new CartDto(e.getProductId(), e.getProductQuantity()))
                 .collect(Collectors.toList());
         productInfoService.decreaseStock(cartDtoList);
-        //
         return orderDto;
     }
 
@@ -102,11 +105,49 @@ public class OrderServiceImpl implements OrderService {
 
     @Override
     public Page<OrderDto> findList(String buyerOpenid, Pageable pageable) {
-        return null;
+        Page<OrderMaster> byBuyerOpenid = masterRepository.findByBuyerOpenid(buyerOpenid, pageable);
+        List<OrderDto> convert = ConvertOrderMaster2OrderDto.convert(byBuyerOpenid.getContent());
+        return new PageImpl<OrderDto>(convert,pageable,byBuyerOpenid.getTotalElements());
     }
 
     @Override
     public OrderDto cancel(OrderDto orderDTO) {
+        if (! OrderStatusEnums.NEW.getCode().equals(orderDTO.getOrderStatus())){
+            log.error("【取消订单】订单状态不正确：orderId={},orderStatus={}",orderDTO.getOrderId(),orderDTO.getOrderStatus());
+            throw new SellException(ExceptionCodeEnums.ORDER_STATUS_ERROR);
+        }
+        OrderMaster orderMaster = new OrderMaster();
+        orderDTO.setOrderStatus(OrderStatusEnums.CANCEL.getCode());
+        BeanUtils.copyProperties(orderDTO,orderMaster);
+        OrderMaster updateMaster = masterRepository.save(orderMaster) ;
+        if (null == updateMaster){
+            log.error("取消订单失败：orderMaster={}",orderMaster);
+            throw new SellException(ExceptionCodeEnums.ORDER_STATUS_UPDATE_FAIL);
+        }
+        if (CollectionUtils.isEmpty(orderDTO.getOrderDetailList())){
+            log.error("订单中没有商品:orderDto={}",orderDTO);
+            throw new SellException(ExceptionCodeEnums.PRODUCT_NOT_FOUND);
+        }
+        List<CartDto> cartDtos = orderDTO.getOrderDetailList().stream()
+                .map(e -> new CartDto(e.getProductId(), e.getProductQuantity()))
+                .collect(Collectors.toList());
+        productInfoService.increaseStock(cartDtos);
+
+
+
+        //退款
+        if (orderDTO.getPayStatus().equals(PayStatusEnums.FINISH.getCode())){
+
+        }
+
+
+
+
+
+
+
+
+
         return null;
     }
 
