@@ -8,5 +8,7 @@ spring:
     show-sql: true
     hibernate:
       ddl-auto: update
+  jackson:
+    default-property-inclusion: non_null
 server:
   context-path: /sell

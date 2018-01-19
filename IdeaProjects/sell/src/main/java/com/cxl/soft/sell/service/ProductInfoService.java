@@ -5,6 +5,9 @@ import com.cxl.soft.sell.dto.CartDto;
 
 import java.util.List;
 
+/**
+ * 商品信息service
+ */
 public interface ProductInfoService {
 
     List<ProductInfo> findAll();
